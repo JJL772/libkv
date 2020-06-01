@@ -8,7 +8,6 @@
  * 		 this will probably lead to memory fragmentation.
  * TODO: Improve the error handling
  * TODO: Add support for conditionals
- * TODO: Somehow cache key values so that we're not converting them to normal C types constantly
  */ 
 #pragma once
 

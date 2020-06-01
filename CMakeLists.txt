@@ -2,7 +2,7 @@
 
 project(libkv C CXX)
 
-set(SRCS src/keyvalues.cpp)
+set(SRCS src/dmx.cpp src/keyvalues.cpp)
 
 if(COMPILE_TESTS)
         add_executable(libkv ${SRCS} src/main.cpp)
