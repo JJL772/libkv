@@ -50,7 +50,7 @@ public:
         bool quoted;
 public:
 
-	KeyValues(const char* name);
+	explicit KeyValues(const char* name);
 	KeyValues();
 
 	~KeyValues();
@@ -86,7 +86,7 @@ public:
 	void 		DumpToStreamInternal(FILE* fs, int indent);
 
 	/* Set Good bit is set if parsing went OK */
-	bool        IsGood() { return this->good; };
+	bool        IsGood() const { return this->good; };
 
 	enum class EError
 	{

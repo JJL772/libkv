@@ -472,3 +472,87 @@ KeyValues* KeyValues::GetChild(const char *name)
 	}
 	return nullptr;
 }
+
+void KeyValues::SetBool(const char *key, bool v)
+{
+	for(auto& _key : this->keys)
+	{
+		if(_key.key && strcmp(_key.key, key) == 0)
+		{
+			_key.cached = KeyValues::key_t::ELastCached::BOOL;
+			_key.cachedv.bval = v;
+			return;
+		}
+	}
+}
+
+void KeyValues::SetInt(const char *key, int v)
+{
+	for(auto& _key : this->keys)
+	{
+		if(_key.key && strcmp(_key.key, key) == 0)
+		{
+			_key.cached = KeyValues::key_t::ELastCached::INT;
+			_key.cachedv.ival = v;
+			return;
+		}
+	}
+}
+
+void KeyValues::SetFloat(const char *key, float v)
+{
+	for(auto& _key : this->keys)
+	{
+		if(_key.key && strcmp(_key.key, key) == 0)
+		{
+			_key.cached = KeyValues::key_t::ELastCached::FLOAT;
+			_key.cachedv.fval = v;
+			return;
+		}
+	}
+}
+
+void KeyValues::SetString(const char *key, const char *v)
+{
+	for(auto& _key : this->keys)
+	{
+		if(_key.key && strcmp(_key.key, key) == 0)
+		{
+			_key.cached = KeyValues::key_t::ELastCached::NONE;
+			if(_key.value) free(_key.value);
+			_key.value = strdup(v);
+			return;
+		}
+	}
+}
+
+void KeyValues::ClearKey(const char *key)
+{
+	for(auto& _key : this->keys)
+	{
+		if(_key.key && strcmp(_key.key, key) == 0)
+		{
+			free(_key.value);
+			_key.value = strdup("");
+			_key.cached = KeyValues::key_t::ELastCached::NONE;
+			return;
+		}
+	}
+}
+
+void KeyValues::RemoveKey(const char *key)
+{
+	for(auto it = this->keys.begin(); it != this->keys.end(); it++)
+	{
+		if(it->value && strcmp(key, it->value) == 0)
+		{
+			this->keys.erase(it);
+			return;
+		}
+	}
+}
+
+void KeyValues::SetErrorCallback(KeyValues::pfnErrorCallback_t callback)
+{
+	this->pCallback = callback;
+}
