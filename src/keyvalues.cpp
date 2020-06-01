@@ -12,7 +12,7 @@
 #include <stdio.h>
 #include <errno.h>
 
-inline bool _isspace(char c)
+inline bool _internal_isspace(char c)
 {
 	return (c == ' ' || c == '\t' || c == '\n' || c == '\r');
 }
@@ -217,14 +217,14 @@ void KeyValues::ParseString(const char* string, bool escape, long long len)
 		}
 
 		/* Eat anything that isn't space into the buffer */
-		if(!_isspace(c) || (inquote))
+		if(!_internal_isspace(c) || (inquote))
 		{
 			buf[bufpos++] = c;
 			continue;
 		}
 
 		/* Finally, handle cases where we've encountered a space and we are not in a quote */
-		if(_isspace(c) && !inquote && bufpos > 0)
+		if(_internal_isspace(c) && !inquote && bufpos > 0)
 		{
 			inquote = false;
 			buf[bufpos] = 0;
@@ -244,7 +244,7 @@ void KeyValues::ParseString(const char* string, bool escape, long long len)
 			}
 			bufpos = 0;
 		}
-                for(; i < nlen-1 && _isspace(string[i+1]); i++);
+                for(; i < nlen-1 && _internal_isspace(string[i + 1]); i++);
 	}
 
 	/* Verify that the parsing completed fine */

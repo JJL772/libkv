@@ -3,3 +3,8 @@ bin/
 *.o
 *.a
 *.so 
+cmake-*
+build*
+.idea/
+.kdev4/
+.vscode/
