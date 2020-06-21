@@ -359,14 +359,14 @@ double KeyValues::GetDouble(const char* key, double _default)
 	return _default;
 }
 
-const char* KeyValues::GetString(const char* key)
+const char* KeyValues::GetString(const char* key, const char* _default)
 {
 	for(auto _key : this->keys)
 	{
 		if(_key.key && strcmp(key, _key.key) == 0)
 			return _key.value;
 	}
-	return NULL;
+	return _default;
 }
 
 bool KeyValues::HasKey(const char* key)

@@ -58,7 +58,7 @@ public:
 	bool 		GetBool(const char* key, bool _default = false);
 	int 		GetInt(const char* key, int _default = -1);
 	float 		GetFloat(const char* key, float _default = 0.0f);
-	const char* GetString(const char* key);
+	const char* GetString(const char* key, const char* _default = nullptr);
 	double 		GetDouble(const char* key, double _default = 0.0);
 	KeyValues*  GetChild(const char* name);
 
