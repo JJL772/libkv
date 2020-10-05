@@ -12,6 +12,7 @@
 #pragma once
 
 #include <vector>
+#include <string>
 #include <stdio.h>
 
 class KeyValues
@@ -53,6 +54,11 @@ public:
 	KeyValues();
 
 	~KeyValues();
+
+	/* Accessors */
+	std::string Name() const { return std::string(name); };
+	bool Quoted() const { return quoted; };
+	bool Good() const { return quoted; }
 
 	/* Getters */
 	bool GetBool(const char *key, bool _default = false);

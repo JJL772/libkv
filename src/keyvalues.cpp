@@ -17,14 +17,17 @@ inline bool _internal_isspace(char c)
 	return (c == ' ' || c == '\t' || c == '\n' || c == '\r');
 }
 
-KeyValues::KeyValues(const char *name) : pCallback(NULL)
+KeyValues::KeyValues(const char *name) : KeyValues()
 {
 	this->name = strdup(name);
 	this->keys.reserve(10);
 	this->quoted = false;
 }
 
-KeyValues::KeyValues() : pCallback(NULL)
+KeyValues::KeyValues() : pCallback(NULL),
+			 good(true),
+			 quoted(false),
+			 name(nullptr)
 {
 }
 
