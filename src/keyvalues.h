@@ -126,6 +126,11 @@ public:
 	/* Array of keys */
 	std::vector<KeyValuesKey> keys;
 
+	const std::vector<KeyValuesKey>& Keys() const { return keys; }
+	std::vector<KeyValuesKey> CopyKeys() const { return keys; }
+
+	cpmst std::vector<KeyValues*>& Children() const { return child_sections; };
+
 private:
 	void ReportError(int line, int _char, EError err);
 	pfnErrorCallback_t pCallback;
