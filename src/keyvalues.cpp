@@ -17,9 +17,12 @@ inline bool _internal_isspace(char c)
 	return (c == ' ' || c == '\t' || c == '\n' || c == '\r');
 }
 
-KeyValues::KeyValues(const char *name) : KeyValues()
+KeyValues::KeyValues(const char *name, KeyValuesMalloc_t customMalloc = nullptr, KeyValuesFree_t customFree = nullptr) : 
+	KeyValues()
 {
-	this->name = strdup(name);
+	m_free = customFree;
+	m_malloc = customMalloc;
+	this->name = kvstrdup(name);
 	this->keys.reserve(10);
 	this->quoted = false;
 }
@@ -27,28 +30,59 @@ KeyValues::KeyValues(const char *name) : KeyValues()
 KeyValues::KeyValues() : pCallback(NULL),
 			 good(true),
 			 quoted(false),
-			 name(nullptr)
+			 name(nullptr),
+			 m_free(nullptr),
+			 m_malloc(nullptr)
 {
 }
 
 KeyValues::~KeyValues()
 {
 	if (this->name)
-		free(name);
+		kvfree(name);
 
 	/* Free the keys */
 	for (auto key : this->keys)
 	{
 		if (key.key)
-			free(key.key);
+			kvfree(key.key);
 		if (key.value)
-			free(key.value);
+			kvfree(key.value);
 	}
 
 	/* Free child sections */
 	for (auto section : this->child_sections)
 		delete section;
 }
+
+void* KeyValues::kvmalloc(size_t sz) const 
+{
+	if(m_malloc)
+		return m_malloc(sz);
+	return malloc(sz);
+}
+
+void KeyValues::kvfree(void* ptr) const
+{
+	if(m_free)
+	{
+		m_free(ptr);
+		return;
+	}
+	free(ptr);
+}
+
+char* KeyValues::kvstrdup(const char* ptr) const
+{
+	size_t sz = strlen(ptr)+1;
+	char* s = (char*)malloc(sz);
+	memcpy(s, ptr, sz);
+	return s;
+}
+
+#define malloc dfjsdgfskdgj
+#define free dgjksdg
+#define strdup gjsdjg
 
 void KeyValues::ParseFile(const char *file, bool use_escape_codes)
 {
@@ -64,7 +98,7 @@ void KeyValues::ParseFile(const char *file, bool use_escape_codes)
 	long int size = ftell(fs);
 
 	/* Read the entire file */
-	char *buffer = static_cast<char *>(malloc(size + 1));
+	char *buffer = static_cast<char *>(kvmalloc(size + 1));
 	fseek(fs, 0, SEEK_SET);
 	fread(buffer, size, 1, fs);
 	fclose(fs);
@@ -73,7 +107,7 @@ void KeyValues::ParseFile(const char *file, bool use_escape_codes)
 	this->ParseString(buffer, use_escape_codes, size);
 
 	/* Free the allocated buffer */
-	free(buffer);
+	kvfree(buffer);
 }
 
 void KeyValues::ParseString(const char *string, bool escape, long long len)
@@ -91,7 +125,7 @@ void KeyValues::ParseString(const char *string, bool escape, long long len)
 
 	KeyValues *RootKV = this;
 	KeyValues *CurrentKV = this;
-	key_t CurrentKey;
+	KeyValuesKey CurrentKey;
 
 	/* Replaces the std::stack calls */
 	int stackpos = 0;
@@ -126,13 +160,13 @@ void KeyValues::ParseString(const char *string, bool escape, long long len)
 				if (parsed_key)
 				{
 					parsed_key = false;
-					CurrentKey.value = strdup(buf);
+					CurrentKey.value = kvstrdup(buf);
 					CurrentKV->keys.push_back(CurrentKey);
 					CurrentKey.key = CurrentKey.value = NULL;
 				}
 				else
 				{
-					CurrentKey.key = strdup(buf);
+					CurrentKey.key = kvstrdup(buf);
 					parsed_key = true;
 				}
 				bufpos = 0;
@@ -165,7 +199,7 @@ void KeyValues::ParseString(const char *string, bool escape, long long len)
 				if (parsed_key)
 				{
 					parsed_key = false;
-					CurrentKey.value = strdup(buf);
+					CurrentKey.value = kvstrdup(buf);
 					CurrentKey.quoted = true;
 					CurrentKV->keys.push_back(CurrentKey);
 					CurrentKey.key = CurrentKey.value = NULL;
@@ -173,7 +207,7 @@ void KeyValues::ParseString(const char *string, bool escape, long long len)
 				else
 				{
 					CurrentKey.quoted = true;
-					CurrentKey.key = strdup(buf);
+					CurrentKey.key = kvstrdup(buf);
 					parsed_key = true;
 				}
 				bufpos = 0;
@@ -192,7 +226,7 @@ void KeyValues::ParseString(const char *string, bool escape, long long len)
 			if (parsed_key)
 			{
 				pKV = new KeyValues(CurrentKey.key);
-				free(CurrentKey.key);
+				kvfree(CurrentKey.key);
 				CurrentKey.key = 0;
 			}
 			else if (bufpos > 0)
@@ -239,7 +273,7 @@ void KeyValues::ParseString(const char *string, bool escape, long long len)
 			if (parsed_key)
 			{
 				parsed_key = false;
-				CurrentKey.value = strdup(buf);
+				CurrentKey.value = kvstrdup(buf);
 				CurrentKey.quoted = false;
 				CurrentKV->keys.push_back(CurrentKey);
 				CurrentKey.key = CurrentKey.value = NULL;
@@ -247,7 +281,7 @@ void KeyValues::ParseString(const char *string, bool escape, long long len)
 			else
 			{
 				CurrentKey.quoted = false;
-				CurrentKey.key = strdup(buf);
+				CurrentKey.key = kvstrdup(buf);
 				parsed_key = true;
 			}
 			bufpos = 0;
@@ -395,7 +429,7 @@ bool KeyValues::HasKey(const char *key)
 	return false;
 }
 
-bool KeyValues::key_t::ReadBool(bool &ok)
+bool KeyValuesKey::ReadBool(bool &ok)
 {
 	ok = true;
 	if (this->cached == ELastCached::BOOL)
@@ -426,7 +460,7 @@ bool KeyValues::key_t::ReadBool(bool &ok)
 	return false;
 }
 
-long int KeyValues::key_t::ReadInt(bool &ok)
+long int KeyValuesKey::ReadInt(bool &ok)
 {
 	ok = true;
 	if (this->cached == ELastCached::INT)
@@ -452,7 +486,7 @@ long int KeyValues::key_t::ReadInt(bool &ok)
 	return 0;
 }
 
-double KeyValues::key_t::ReadFloat(bool &ok)
+double KeyValuesKey::ReadFloat(bool &ok)
 {
 	ok = true;
 	if (this->cached == ELastCached::FLOAT)
@@ -496,7 +530,7 @@ void KeyValues::SetBool(const char *key, bool v)
 	{
 		if (_key.key && strcmp(_key.key, key) == 0)
 		{
-			_key.cached = KeyValues::key_t::ELastCached::BOOL;
+			_key.cached = KeyValuesKey::ELastCached::BOOL;
 			_key.cachedv.bval = v;
 			return;
 		}
@@ -509,7 +543,7 @@ void KeyValues::SetInt(const char *key, int v)
 	{
 		if (_key.key && strcmp(_key.key, key) == 0)
 		{
-			_key.cached = KeyValues::key_t::ELastCached::INT;
+			_key.cached = KeyValuesKey::ELastCached::INT;
 			_key.cachedv.ival = v;
 			return;
 		}
@@ -522,7 +556,7 @@ void KeyValues::SetFloat(const char *key, float v)
 	{
 		if (_key.key && strcmp(_key.key, key) == 0)
 		{
-			_key.cached = KeyValues::key_t::ELastCached::FLOAT;
+			_key.cached = KeyValuesKey::ELastCached::FLOAT;
 			_key.cachedv.fval = v;
 			return;
 		}
@@ -535,10 +569,10 @@ void KeyValues::SetString(const char *key, const char *v)
 	{
 		if (_key.key && strcmp(_key.key, key) == 0)
 		{
-			_key.cached = KeyValues::key_t::ELastCached::NONE;
+			_key.cached = KeyValuesKey::ELastCached::NONE;
 			if (_key.value)
-				free(_key.value);
-			_key.value = strdup(v);
+				kvfree(_key.value);
+			_key.value = kvstrdup(v);
 			return;
 		}
 	}
@@ -550,9 +584,9 @@ void KeyValues::ClearKey(const char *key)
 	{
 		if (_key.key && strcmp(_key.key, key) == 0)
 		{
-			free(_key.value);
-			_key.value = strdup("");
-			_key.cached = KeyValues::key_t::ELastCached::NONE;
+			kvfree(_key.value);
+			_key.value = kvstrdup("");
+			_key.cached = KeyValuesKey::ELastCached::NONE;
 			return;
 		}
 	}

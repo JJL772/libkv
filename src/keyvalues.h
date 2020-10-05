@@ -15,42 +15,54 @@
 #include <string>
 #include <stdio.h>
 
-class KeyValues
+class KeyValuesKey
 {
 public:
-	struct key_t
+	char *key;
+	char *value;
+	enum class ELastCached
 	{
-		char *key;
-		char *value;
-		enum class ELastCached
-		{
-			NONE = 0,
-			INT,
-			FLOAT,
-			BOOL,
-		} cached;
+		NONE = 0,
+		INT,
+		FLOAT,
+		BOOL,
+	} cached;
 
-		union
-		{
-			long int ival;
-			double fval;
-			bool bval;
-		} cachedv;
+	union
+	{
+		long int ival;
+		double fval;
+		bool bval;
+	} cachedv;
 
-		bool quoted;
+	bool quoted;
 
-		key_t() { cached = ELastCached::NONE; };
+	KeyValuesKey() { cached = ELastCached::NONE; };
 
-		inline bool ReadBool(bool &ok);
-		inline long int ReadInt(bool &ok);
-		inline double ReadFloat(bool &ok);
-	};
+	inline bool ReadBool(bool &ok);
+	inline long int ReadInt(bool &ok);
+	inline double ReadFloat(bool &ok);
+};
+
+typedef void *(*KeyValuesMalloc_t)(size_t);
+typedef void (*KeyValuesFree_t)(void *);
+
+class KeyValues
+{
+private:
+	KeyValuesFree_t m_free;
+	KeyValuesMalloc_t m_malloc;
+
+	void* kvmalloc(size_t sz) const;
+	void kvfree(void* ptr) const;
+	char* kvstrdup(const char* s) const;
+public:
 	char *name;
 	bool good;
 	bool quoted;
 
 public:
-	explicit KeyValues(const char *name);
+	explicit KeyValues(const char *name, KeyValuesMalloc_t customMalloc = nullptr, KeyValuesFree_t customFree = nullptr);
 	KeyValues();
 
 	~KeyValues();
@@ -112,7 +124,7 @@ public:
 	std::vector<KeyValues *> child_sections;
 
 	/* Array of keys */
-	std::vector<key_t> keys;
+	std::vector<KeyValuesKey> keys;
 
 private:
 	void ReportError(int line, int _char, EError err);
