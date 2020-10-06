@@ -10,6 +10,7 @@
 
 #include <string>
 #include <vector>
+#include <type_traits>
 
 /*
  * Native DMX Types.
@@ -125,4 +126,77 @@ namespace libkv
 	using DmxColorArray = std::vector<DmxColor>;
 	using DmxFloatArray = std::vector<DmxFloat>;
 	using DmxVector4Array = std::vector<DmxVector4>;
+
+	enum class EDmxType
+	{
+		Bool,
+		Int,
+		Int16,
+		UInt16,
+		Int32,
+		UInt32,
+		Int64,
+		UInt64,
+		Float,
+		Double,
+		String,
+		ElementId,
+		Vector2,
+		Vector3,
+		Vector4,
+		Color,
+		QAngle,
+		Array
+	};
+
+#define ENABLE_IF_TYPE(_TYPE) template<typename __U, std::enable_if<std::is_same<T,__TYPE>::value, int UNUSED>
+
+	class IDmxBaseElement
+	{
+	public:
+		virtual EDmxType Type() const = 0;
+	};
+
+#define CDMXELEMENT_SET_TYPE(_TYPE) ENABLE_OF_TYPE(Dmx ## _TYPE) CDmxElement() : m_type(EDmxType::_TYPE) {}
+
+	template<class T>
+	class CDmxElement : public IDmxBaseElement
+	{
+	protected:
+		T m_value;
+		EDmxType m_type;
+	public:
+		/* Defines all of the constructors */
+		CDMXELEMENT_SET_TYPE(Bool);
+		CDMXELEMENT_SET_TYPE(Int);
+		CDMXELEMENT_SET_TYPE(Int16);
+		CDMXELEMENT_SET_TYPE(UInt16);
+		CDMXELEMENT_SET_TYPE(Int32);
+		CDMXELEMENT_SET_TYPE(UInt32);
+		CDMXELEMENT_SET_TYPE(Int64);
+		CDMXELEMENT_SET_TYPE(UInt64);
+		CDMXELEMENT_SET_TYPE(Float);
+		CDMXELEMENT_SET_TYPE(Double);
+		CDMXELEMENT_SET_TYPE(String);
+		CDMXELEMENT_SET_TYPE(ElementId);
+		CDMXELEMENT_SET_TYPE(Vector2);
+		CDMXELEMENT_SET_TYPE(Vector3);
+		CDMXELEMENT_SET_TYPE(Vector4);
+		CDMXELEMENT_SET_TYPE(Color);
+		CDMXELEMENT_SET_TYPE(QAngle);
+
+		EDmxType Type() const override { return m_type; };
+
+		const T& Value() const { return m_value; };
+		T& Value() { return m_value; };
+
+		void Set(const T& v) { m_value = v; }
+
+		CDmxElement(const T& value) :
+			CDmxElement()
+		{
+		}
+	};
+
+#undef CDMXELEMENT_SET_TYPE
 }
