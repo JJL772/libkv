@@ -118,17 +118,9 @@ namespace libkv
 	using DmxVector2 = Vector2;
 	using DmxVector4 = Vector4;
 
-	/* Array types */
-	using DmxIntArray = std::vector<DmxInt>;
-	using DmxStringArray = std::vector<DmxString>;
-	using DmxVector3Array = std::vector<DmxVector3>;
-	using DmxVector2Array = std::vector<DmxVector2>;
-	using DmxColorArray = std::vector<DmxColor>;
-	using DmxFloatArray = std::vector<DmxFloat>;
-	using DmxVector4Array = std::vector<DmxVector4>;
-
 	enum class EDmxType
 	{
+		BadType = 0,
 		Bool,
 		Int,
 		Int16,
@@ -149,15 +141,37 @@ namespace libkv
 		Array
 	};
 
-#define ENABLE_IF_TYPE(_TYPE) template<typename __U, std::enable_if<std::is_same<T,__TYPE>::value, int UNUSED>
+	template<class T>
+	constexpr EDmxType TypeOfT()
+	{
+		if(std::is_same<T, DmxBool>::value) return EDmxType::Bool;
+		else if(std::is_same<T, DmxInt>::value) return EDmxType::Int;
+		else if(std::is_same<T, DmxInt16>::value) return EDmxType::Int16;
+		else if(std::is_same<T, DmxUInt16>::value) return EDmxType::UInt16;
+		else if(std::is_same<T, DmxInt32>::value) return EDmxType::Int32;
+		else if(std::is_same<T, DmxUInt32>::value) return EDmxType::UInt32;
+		else if(std::is_same<T, DmxInt64>::value) return EDmxType::Int64;
+		else if(std::is_same<T, DmxUInt64>::value) return EDmxType::UInt64;
+		else if(std::is_same<T, DmxFloat>::value) return EDmxType::Float;
+		else if(std::is_same<T, DmxDouble>::value) return EDmxType::Double;
+		else if(std::is_same<T, DmxString>::value) return EDmxType::String;
+		else if(std::is_same<T, DmxElementId>::value) return EDmxType::ElementId;
+		else if(std::is_same<T, DmxVector2>::value) return EDmxType::Vector2;
+		else if(std::is_same<T, DmxVector3>::value) return EDmxType::Vector3;
+		else if(std::is_same<T, DmxVector4>::value) return EDmxType::Vector4;
+		else if(std::is_same<T, DmxQAngle>::value) return EDmxType::QAngle;
+		else if(std::is_same<T, DmxColor>::value) return EDmxType::Color;
+		return EDmxType::BadType;
+	}
 
 	class IDmxBaseElement
 	{
 	public:
-		virtual EDmxType Type() const = 0;
-	};
 
-#define CDMXELEMENT_SET_TYPE(_TYPE) ENABLE_OF_TYPE(Dmx ## _TYPE) CDmxElement() : m_type(EDmxType::_TYPE) {}
+		virtual EDmxType Type() const = 0;
+
+		virtual bool IsArray() const { return false; }
+	};
 
 	template<class T>
 	class CDmxElement : public IDmxBaseElement
@@ -165,25 +179,20 @@ namespace libkv
 	protected:
 		T m_value;
 		EDmxType m_type;
-	public:
+
 		/* Defines all of the constructors */
-		CDMXELEMENT_SET_TYPE(Bool);
-		CDMXELEMENT_SET_TYPE(Int);
-		CDMXELEMENT_SET_TYPE(Int16);
-		CDMXELEMENT_SET_TYPE(UInt16);
-		CDMXELEMENT_SET_TYPE(Int32);
-		CDMXELEMENT_SET_TYPE(UInt32);
-		CDMXELEMENT_SET_TYPE(Int64);
-		CDMXELEMENT_SET_TYPE(UInt64);
-		CDMXELEMENT_SET_TYPE(Float);
-		CDMXELEMENT_SET_TYPE(Double);
-		CDMXELEMENT_SET_TYPE(String);
-		CDMXELEMENT_SET_TYPE(ElementId);
-		CDMXELEMENT_SET_TYPE(Vector2);
-		CDMXELEMENT_SET_TYPE(Vector3);
-		CDMXELEMENT_SET_TYPE(Vector4);
-		CDMXELEMENT_SET_TYPE(Color);
-		CDMXELEMENT_SET_TYPE(QAngle);
+		CDmxElement() :
+			m_type(libkv::TypeOfT<T>())
+		{
+
+		}
+
+	public:
+		CDmxElement(const T& value) :
+			CDmxElement()
+		{
+		}
+
 
 		EDmxType Type() const override { return m_type; };
 
@@ -192,11 +201,80 @@ namespace libkv
 
 		void Set(const T& v) { m_value = v; }
 
-		CDmxElement(const T& value) :
-			CDmxElement()
+		template<class _T>
+		bool IsA(const _T& unused)
 		{
+			return m_type == TypeOfT<_T>();
+		}
+
+		template<class _T>
+		bool IsA()
+		{
+			return m_type == TypeOfT<_T>();
 		}
 	};
 
-#undef CDMXELEMENT_SET_TYPE
+	template<class T>
+	class CDmxArray : public IDmxBaseElement
+	{
+	protected:
+		EDmxType m_arrayType;
+		std::vector<T> m_array;
+
+		CDmxArray() :
+			m_arrayType(libkv::TypeOfT<T>())
+		{
+
+		}
+
+	public:
+		explicit CDmxArray(size_t length) :
+			CDmxArray(),
+			m_array(length)
+		{
+
+		}
+
+		explicit CDmxArray(std::initializer_list<T> list) :
+			CDmxArray(),
+			m_array(list)
+		{
+
+		}
+
+		template<class _T>
+		bool IsArrayOf(const _T& unused)
+		{
+			return m_arrayType == TypeOfT<_T>();
+		}
+
+		template<class _T>
+		bool IsArrayOf()
+		{
+			return m_arrayType == TypeOfT<_T>();
+		}
+
+		EDmxType Type() const override { return m_arrayType; };
+
+		bool IsArray() const override { return true; };
+	};
+
+	/* Array type definitions */
+	using DmxBoolArray            = CDmxArray<DmxBool>;
+	using DmxIntArray             = CDmxArray<DmxInt>;
+	using DmxInt16Array           = CDmxArray<DmxInt16>;
+	using DmxUInt16Array          = CDmxArray<DmxUInt16>;
+	using DmxInt32Array           = CDmxArray<DmxInt32>;
+	using DmxUInt32Array          = CDmxArray<DmxUInt32>;
+	using DmxInt64Array           = CDmxArray<DmxInt64>;
+	using DmxUInt64Array          = CDmxArray<DmxUInt64>;
+	using DmxFloatArray           = CDmxArray<DmxFloat>;
+	using DmxDoubleArray          = CDmxArray<DmxDouble>;
+	using DmxStringArray          = CDmxArray<DmxString>;
+	using DmxElementIdArray       = CDmxArray<DmxElementId>;
+	using DmxVector3Array         = CDmxArray<DmxVector3>;
+	using DmxQAngleArray          = CDmxArray<DmxQAngle>;
+	using DmxColorArray           = CDmxArray<DmxColor>;
+	using DmxVector2Array         = CDmxArray<DmxVector2>;
+	using DmxVector4Array         = CDmxArray<DmxVector4>;
 }
